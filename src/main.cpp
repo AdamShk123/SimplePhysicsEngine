@@ -19,8 +19,6 @@ float lastFrame = 0.0f;
 
 int main()
 {
-    
-    //std::cout << std::pow(2,2) << std::endl;
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -61,137 +59,11 @@ int main()
     // ------------------------------------
     Shader ourShader("shaders/vertex.glsl", "shaders/fragment.glsl"); // you can name your shader files however you like
 
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
-    // float vertices[] = {
-    //     -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-    //      0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-    //      0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    //      0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    //     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-    //     -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-    //     -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    //      0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-    //      0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-    //      0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-    //     -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-    //     -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-    //     -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    //     -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    //     -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    //     -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    //     -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    //     -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-    //      0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    //      0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    //      0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    //      0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    //      0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    //      0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-    //     -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    //      0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-    //      0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-    //      0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-    //     -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    //     -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-    //     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-    //      0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-    //      0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    //      0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    //     -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-    //     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    // };
-
-    float total = 360.0f;
-
-    int triangles = 12;
-
     float radius = 1.0f;
-
-    float degree = total / triangles; // 360 / 12 = 30
-
-    float currentAngle = 0.0f;
-
-    float triangleVertices[3 + triangles * 3];
-
-    triangleVertices[0] = 0.0f;
-    triangleVertices[1] = 0.0f;
-    triangleVertices[2] = 0.0f;
-
-
-    // calculate new vertex
-    for(int i = 0; i < triangles; i++) 
-    {
-        glm::vec3 newPoint;
-
-        newPoint.x = radius * std::sin(glm::radians(currentAngle));
-        newPoint.y = radius * std::cos(glm::radians(currentAngle));
-        newPoint.z = 0;
-
-        triangleVertices[3 + 3 * i + 0] = newPoint.x;
-        triangleVertices[3 + 3 * i + 1] = newPoint.y;
-        triangleVertices[3 + 3 * i + 2] = newPoint.z;
-
-        currentAngle += degree;
-
-        //printf("x: %f, y: %f\n", newPoint.x, newPoint.y);
-    }
-    
-    int triangleIndices[triangles * 3];
-
-    for(int i = 0; i < triangles; i++)
-    {
-        triangleIndices[i * 3 + 0] = 0;
-        triangleIndices[i * 3 + 1] = i + 1;
-        triangleIndices[i * 3 + 2] = i + 2;
-        //printf("%d: %d, %d: %d, %d: %d\n", i * 3, 0, i * 3 + 1, i + 1, i * 3 + 2, i + 2);
-    }
-
-    triangleIndices[triangles * 3 - 1] = 1;
-
-    // world space positions of our cubes
-    // glm::vec3 cubePositions[] = {
-    //     glm::vec3( 0.0f,  0.0f,  0.0f),
-    //     glm::vec3( 2.0f,  5.0f, -15.0f),
-    //     glm::vec3(-1.5f, -2.2f, -2.5f),
-    //     glm::vec3(-3.8f, -2.0f, -12.3f),
-    //     glm::vec3( 2.4f, -0.4f, -3.5f),
-    //     glm::vec3(-1.7f,  3.0f, -7.5f),
-    //     glm::vec3( 1.3f, -2.0f, -2.5f),
-    //     glm::vec3( 1.5f,  2.0f, -2.5f),
-    //     glm::vec3( 1.5f,  0.2f, -1.5f),
-    //     glm::vec3(-1.3f,  1.0f, -1.5f)
-    // };
-
-    // unsigned int indices[] = {  
-    //     0, 1, 3, // first triangle
-    //     1, 2, 3  // second triangle
-    // };
-
-    unsigned int VBO, VAO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(triangleVertices), triangleVertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(triangleIndices), triangleIndices, GL_STATIC_DRAW);
-
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    // texture coord attribute
-    // glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    // glEnableVertexAttribArray(1);
+    int triangles = 20;
+    Circle circle(radius, triangles);
+    //std::cout << circle.getArea() << std::endl;
+    circle.bindVertexArray();
 
     // load and create a texture 
     // -------------------------
@@ -286,18 +158,6 @@ int main()
 
         ourShader.use();
 
-        // create transformations
-        // glm::mat4 view          = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-        // glm::mat4 projection    = glm::mat4(1.0f);
-        // projection = glm::perspective(glm::radians(45.0f), (float)1920 / (float)1080, 0.1f, 100.0f);
-        // view       = glm::translate(view, glm::vec3(3.0f, 0.0f, -3.0f));
-        // //view = glm::rotate(view, glm::radians(30.0f), glm::vec3(0.0f,1.0f,0.0f));
-        // //view       = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
-        // // pass transformation matrices to the shader
-        // ourShader.setMat4("projection", projection); // note: currently we set the projection matrix each frame, but since the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
-        // // ourShader.setMat4("view", view);
-        //
-
         //gl_Position = projection * view * model * vec4
 
         // camera/view transformation
@@ -308,23 +168,10 @@ int main()
         ourShader.setMat4("model", model);
 
         // render boxes
-        glBindVertexArray(VAO);
-        // for (unsigned int i = 0; i < 10; i++)
-        // {
-        //     // calculate the model matrix for each object and pass it to shader before drawing
-        //     glm::mat4 model = glm::mat4(1.0f);
-        //     model = glm::translate(model, cubePositions[i]);
-        //     float angle = 20.0f * i;
-        //     model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-        //     ourShader.setMat4("model", model);
-
-        //     glDrawArrays(GL_TRIANGLES, 0, 36);
-        // }
+        //glBindVertexArray(VAO);
+        circle.bindVertexArray();
         
-        
-        //glDrawArrays(GL_TRIANGLES, 0, 3);
         glDrawElements(GL_TRIANGLES, triangles * 3, GL_UNSIGNED_INT, 0);
-        // glBindVertexArray(0); // no need to unbind it every time 
  
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -334,9 +181,9 @@ int main()
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
+    // glDeleteVertexArrays(1, &VAO);
+    // glDeleteBuffers(1, &VBO);
+    // glDeleteBuffers(1, &EBO);
     //glDeleteProgram(shaderProgram);
     
 

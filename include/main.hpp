@@ -10,6 +10,7 @@
 
 #include "shader.hpp"
 #include "shape.hpp"
+#include "circle.hpp"
 #include "entity.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION

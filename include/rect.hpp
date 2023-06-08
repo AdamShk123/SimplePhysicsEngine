@@ -1,4 +1,6 @@
-#include "shape.hpp"
+#ifndef SHAPE
+    #include "shape.hpp"
+#endif
 
 class Rect : Shape
 {
