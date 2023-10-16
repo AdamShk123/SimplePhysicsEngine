@@ -1,11 +1,15 @@
 all: clean compile link
 
+FILES := src/main.cpp src/glad.c
+
+LIBS := -l glfw -lGL
+
 clean:
-	rm obj/* main
+	rm obj/* main.exe
 
 compile:
-	g++ -g src/*.c* -c
+	g++ --std=c++17 -g ${FILES} -c
 	mv *.o obj/
 
 link:
-	g++ obj/* -o main -lglfw3 -lgdi32 -lopengl32 #-llua
+	g++ obj/* -o main.exe ${LIBS}

@@ -1,217 +1,285 @@
 #include "../include/main.hpp"
-#include <cmath>
-#include <cstdio>
-// extern "C"
-// {
-//     #include <lua.h>
-//     #include <lauxlib.h>
-//     #include <lualib.h>
-// }
 
-// camera
-glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
+float *getVertices(Texture *texture, Rect<float> *screen, Rect<float> *sprite)
+{
+    // printf("image width: %d, image height: %d\n\n", texture->width, texture->height);     
+  
+    // printf("before conversion\n\n");
 
-// timing
-float deltaTime = 0.0f;	// time between current frame and last frame
-float lastFrame = 0.0f;
+    // printf("screen coordinates:\n");
+    // printf("top left: (%f, %f)\n", screen->x, screen->y);
+    // printf("top right: (%f, %f)\n", screen->x + screen->w, screen->y);
+    // printf("bottom left: (%f, %f)\n", screen->x, screen->y + screen->h);
+    // printf("bottom right: (%f, %f)\n\n", screen->x + screen->w, screen->y + screen->h);
+
+    // printf("sprite coordinates:\n");
+    // printf("top left (%f, %f)\n", sprite->x, sprite->y);
+    // printf("top right (%f, %f)\n", sprite->x + sprite->w, sprite->y);
+    // printf("bottom left (%f, %f)\n", sprite->x, sprite->y + sprite->h);
+    // printf("bottom (%f, %f)\n\n", sprite->x + sprite->w, sprite->y + sprite->h);
+
+    // printf("after conversion\n\n");
+
+    float a,b,c,d;
+    a = (screen->x - (float)SCREEN_WIDTH/2) / ((float)SCREEN_WIDTH/2);
+    b = (screen->y - (float)SCREEN_HEIGHT/2) / ((float)SCREEN_HEIGHT/2) * -1;
+    c = (screen->x + screen->w - (float)SCREEN_WIDTH/2) / ((float)SCREEN_WIDTH/2);
+    d = (screen->y + screen->h - (float)SCREEN_HEIGHT/2) / ((float)SCREEN_HEIGHT/2) * -1;
+
+    // printf("screen coordinates:\n");
+    // printf("top left: (%f, %f)\n", a, b);
+    // printf("top right: (%f, %f)\n", c, b);
+    // printf("bottom left: (%f, %f)\n", a, d);
+    // printf("bottom right: (%f, %f)\n\n", c, d);
+
+    float e,f,g,h;
+    e = (sprite->x) / ((float)texture->width);
+    f = 1.0f - (sprite->y) / ((float)texture->height);
+    g = (sprite->x + sprite->w) / ((float)texture->width);
+    h = 1.0f - (sprite->y + sprite->h) / ((float)texture->height);
+
+    // printf("sprite coordinates:\n");
+    // printf("top left (%f, %f)\n", e, f);
+    // printf("top right (%f, %f)\n", g, f);
+    // printf("bottom left (%f, %f)\n", e, h);
+    // printf("bottom right (%f, %f)\n", g, h);
+
+    float *vertices = new float[30] {
+        a, b, 0.0f, e, f,
+        c, b, 0.0f, g, f,
+        a, d, 0.0f, e, h,
+        c, d, 0.0f, g, h,
+    };
+
+    return vertices;
+};
+
+void loadTexture(std::string path, bool rgba, Texture *texture)
+{
+    unsigned int id;
+    glGenTextures(1, &id);
+    glBindTexture(GL_TEXTURE_2D, id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    stbi_set_flip_vertically_on_load(true);
+
+    int width, height, nrChannels;
+
+    unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
+    if (data)
+    {
+        if(rgba)
+        {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        }
+        else
+        {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        }
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        printf("Failed to load texture\n");
+    }
+
+    stbi_image_free(data);
+    
+    texture->id = id;
+    texture->width = width;
+    texture->height = height;
+}
 
 int main()
 {
-    // glfw: initialize and configure
-    // ------------------------------
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
     // glfw window creation
     // --------------------
-    GLFWwindow* window = glfwCreateWindow(1920, 1080, "LearnOpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "OpenGL", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         return -1;
     }
+
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    // glad: load all OpenGL function pointers
-    // ---------------------------------------
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        std::cout << "Failed to initialize GLAD" << std::endl;
+        printf("Failed to initialize GLAD\n");
         return -1;
     }
 
-    // configure global opengl state
-    // -----------------------------
-    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    Shader ourShader("shaders/vertex.glsl", "shaders/fragment.glsl");
 
-    // build and compile our shader program
-    // ------------------------------------
-    Shader ourShader("shaders/vertex.glsl", "shaders/fragment.glsl"); // you can name your shader files however you like
+    std::vector<float> buffer = std::vector<float>(); 
 
-    float radius = 1.0f;
-    int triangles = 20;
-    Circle circle(radius, triangles);
-    //std::cout << circle.getArea() << std::endl;
-    circle.bindVertexArray();
+    unsigned int indices[] = {
+        0, 1, 2,
+        1, 2, 3,
+    };
 
-    // load and create a texture 
-    // -------------------------
-    unsigned int texture1;
-    glGenTextures(1, &texture1);
-    glBindTexture(GL_TEXTURE_2D, texture1); // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
-    // set the texture wrapping parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // set texture filtering parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    unsigned int VBO, VAO, EBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
 
-    stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
+    glBindVertexArray(VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    // position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // color attribute
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    stbi_set_flip_vertically_on_load(true);
+
+    Texture t1, t2;
+
+    loadTexture("resources/container.jpg", false, &t1);
+    loadTexture("resources/link.png", true, &t2);
+
+    Rect<float> screen = {0, 0, (float)t1.width, (float)t1.height};
+    Rect<float> sprite = {0,0, (float)t1.width, (float)t1.height};
+
+    float *v1 = getVertices(&t1, &screen, &sprite);
     
-    // load image, create texture and generate mipmaps
-    int width, height, nrChannels;
-    // The FileSystem::getPath(...) is part of the GitHub repository so we can find files on any IDE/platform; replace it with your own image path.
-    unsigned char *data = stbi_load("resources/container.jpg", &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        std::cout << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(data);
+    screen = {0, 0, 32 * 4, 32 * 4};
+    sprite = {8, 5, 32, 32};
+    
+    float *v2 = getVertices(&t2, &screen, &sprite);
 
-    // texture 2
-    // ---------
-    unsigned int texture2;
-    glGenTextures(1, &texture2);
-    glBindTexture(GL_TEXTURE_2D, texture2);
-    // set the texture wrapping parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // set texture filtering parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // load image, create texture and generate mipmaps
-    data = stbi_load("resources/awesomeface.png", &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        // note that the awesomeface.png has transparency and thus an alpha channel, so make sure to tell OpenGL the data type is of GL_RGBA
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        std::cout << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(data);
+    screen = {32 * 4, 0, 32 * 4, 32 * 4};
+    sprite = {40, 5, 32, 32};
 
-    // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
-    // -------------------------------------------------------------------------------------------
+    float *v3 = getVertices(&t2, &screen, &sprite);
+
+    screen = {32 * 8, 0, 32 * 4, 32 * 4};
+    sprite = {72, 5, 32, 32};
+
+    float *v4 = getVertices(&t2, &screen, &sprite);
+
+    screen = {0, 32 * 4, 32 * 4, 32 * 4};
+    sprite = {8, 37, 32, 32};
+    
+    float *v5 = getVertices(&t2, &screen, &sprite);
+
+    screen = {32 * 4, 32 * 4, 32 * 4, 32 * 4};
+    sprite = {40, 37, 32, 32};
+
+    float *v6 = getVertices(&t2, &screen, &sprite);
+
+    screen = {32 * 8, 32 * 4, 32 * 4, 32 * 4};
+    sprite = {72, 37, 32, 32};
+
+    float *v7 = getVertices(&t2, &screen, &sprite);
+
+
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, t1.id);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, t2.id);
+
     ourShader.use();
     ourShader.setInt("texture1", 0);
     ourShader.setInt("texture2", 1);
 
-
-    // pass projection matrix to shader (as projection matrix rarely changes there's no need to do this per frame)
-    // -----------------------------------------------------------------------------------------------------------
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)1920 / (float)1080, 0.1f, 100.0f);
-    ourShader.setMat4("projection", projection);
-
+    glm::mat4 transform = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
     {
-        // per-frame time logic
-        // --------------------
-        float currentFrame = static_cast<float>(glfwGetTime());
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
+        // processInput(window);
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        {
+            glfwSetWindowShouldClose(window, true);
+        }
+        else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        {
+            transform = glm::translate(transform, glm::vec3(-0.1f, 0.0f, 0.0f));
+        }
+        else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        {
+            transform = glm::translate(transform, glm::vec3(0.1f, 0.0f, 0.0f));
+        }
+        else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        {
+            transform = glm::translate(transform, glm::vec3(0.0f, -0.1f, 0.0f));
+        }
+        else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        {
+            transform = glm::translate(transform, glm::vec3(0.0f, 0.1f, 0.0f));
+        }
 
-        // input
-        // -----
-        process_input(window);
+        glClearColor(0.9f, 0.9f, 0.9f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-        // render
-        // ------
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // also clear the depth buffer now!
+        // create transformations
 
-        // bind textures on corresponding texture units
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
-
+        // get matrix's uniform location and set matrix
         ourShader.use();
+        ourShader.setMat4("transform", transform);
+        ourShader.setInt("num", 0);
+        glBufferData(GL_ARRAY_BUFFER, 30 * sizeof(float), v1, GL_STATIC_DRAW);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        //gl_Position = projection * view * model * vec4
+        ourShader.setInt("num", 1);
+        glBufferData(GL_ARRAY_BUFFER, 30 * sizeof(float), v2, GL_STATIC_DRAW);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBufferData(GL_ARRAY_BUFFER, 30 * sizeof(float), v3, GL_STATIC_DRAW);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBufferData(GL_ARRAY_BUFFER, 30 * sizeof(float), v4, GL_STATIC_DRAW);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        // camera/view transformation
-        glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-        ourShader.setMat4("view", view);
+        glBufferData(GL_ARRAY_BUFFER, 30 * sizeof(float), v5, GL_STATIC_DRAW);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBufferData(GL_ARRAY_BUFFER, 30 * sizeof(float), v6, GL_STATIC_DRAW);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBufferData(GL_ARRAY_BUFFER, 30 * sizeof(float), v7, GL_STATIC_DRAW);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        glm::mat4 model = glm::mat4(1.0f);
-        ourShader.setMat4("model", model);
 
-        // render boxes
-        //glBindVertexArray(VAO);
-        circle.bindVertexArray();
-        
-        glDrawElements(GL_TRIANGLES, triangles * 3, GL_UNSIGNED_INT, 0);
- 
-        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-        // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    // optional: de-allocate all resources once they've outlived their purpose:
-    // ------------------------------------------------------------------------
-    // glDeleteVertexArrays(1, &VAO);
-    // glDeleteBuffers(1, &VBO);
-    // glDeleteBuffers(1, &EBO);
-    //glDeleteProgram(shaderProgram);
-    
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
 
-    // glfw: terminate, clearing all previously allocated GLFW resources.
-    // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
+}
+
+void processInput(GLFWwindow *window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
-}
-
-void process_input(GLFWwindow *window)
-{
-    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    {
-        glfwSetWindowShouldClose(window, true);
-    }
-
-    float cameraSpeed = static_cast<float>(2.5 * deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        cameraPos += cameraSpeed * cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        cameraPos -= cameraSpeed * cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 }
