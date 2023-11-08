@@ -1,6 +1,6 @@
 all: clean compile link
 
-FILES := src/main.cpp src/glad.c
+FILES := src/main.cpp src/batch_renderer.cpp src/glad.c
 
 LIBS := -l glfw -lGL
 

@@ -2,47 +2,17 @@
 
 float *getVertices(Texture *texture, Rect<float> *screen, Rect<float> *sprite)
 {
-    // printf("image width: %d, image height: %d\n\n", texture->width, texture->height);     
-  
-    // printf("before conversion\n\n");
-
-    // printf("screen coordinates:\n");
-    // printf("top left: (%f, %f)\n", screen->x, screen->y);
-    // printf("top right: (%f, %f)\n", screen->x + screen->w, screen->y);
-    // printf("bottom left: (%f, %f)\n", screen->x, screen->y + screen->h);
-    // printf("bottom right: (%f, %f)\n\n", screen->x + screen->w, screen->y + screen->h);
-
-    // printf("sprite coordinates:\n");
-    // printf("top left (%f, %f)\n", sprite->x, sprite->y);
-    // printf("top right (%f, %f)\n", sprite->x + sprite->w, sprite->y);
-    // printf("bottom left (%f, %f)\n", sprite->x, sprite->y + sprite->h);
-    // printf("bottom (%f, %f)\n\n", sprite->x + sprite->w, sprite->y + sprite->h);
-
-    // printf("after conversion\n\n");
-
     float a,b,c,d;
     a = (screen->x - (float)SCREEN_WIDTH/2) / ((float)SCREEN_WIDTH/2);
     b = (screen->y - (float)SCREEN_HEIGHT/2) / ((float)SCREEN_HEIGHT/2) * -1;
     c = (screen->x + screen->w - (float)SCREEN_WIDTH/2) / ((float)SCREEN_WIDTH/2);
     d = (screen->y + screen->h - (float)SCREEN_HEIGHT/2) / ((float)SCREEN_HEIGHT/2) * -1;
 
-    // printf("screen coordinates:\n");
-    // printf("top left: (%f, %f)\n", a, b);
-    // printf("top right: (%f, %f)\n", c, b);
-    // printf("bottom left: (%f, %f)\n", a, d);
-    // printf("bottom right: (%f, %f)\n\n", c, d);
-
     float e,f,g,h;
     e = (sprite->x) / ((float)texture->width);
     f = 1.0f - (sprite->y) / ((float)texture->height);
     g = (sprite->x + sprite->w) / ((float)texture->width);
     h = 1.0f - (sprite->y + sprite->h) / ((float)texture->height);
-
-    // printf("sprite coordinates:\n");
-    // printf("top left (%f, %f)\n", e, f);
-    // printf("top right (%f, %f)\n", g, f);
-    // printf("bottom left (%f, %f)\n", e, h);
-    // printf("bottom right (%f, %f)\n", g, h);
 
     float *vertices = new float[30] {
         a, b, 0.0f, e, f,
@@ -102,8 +72,6 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    // glfw window creation
-    // --------------------
     GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "OpenGL", NULL, NULL);
     if (window == NULL)
     {
@@ -122,7 +90,7 @@ int main()
     }
 
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     Shader ourShader("shaders/vertex.glsl", "shaders/fragment.glsl");
 
@@ -131,6 +99,8 @@ int main()
     unsigned int indices[] = {
         0, 1, 2,
         1, 2, 3,
+        4, 5, 6,
+        5, 6, 7
     };
 
     unsigned int VBO, VAO, EBO;
@@ -163,39 +133,14 @@ int main()
     Rect<float> screen = {0, 0, (float)t1.width, (float)t1.height};
     Rect<float> sprite = {0,0, (float)t1.width, (float)t1.height};
 
+    screen.w = (float)SCREEN_WIDTH * 2;
+    screen.h = (float)SCREEN_HEIGHT * 2;
     float *v1 = getVertices(&t1, &screen, &sprite);
-    
-    screen = {0, 0, 32 * 4, 32 * 4};
-    sprite = {8, 5, 32, 32};
+    float sprite_size = 32.0f; 
+    screen = {(float)SCREEN_WIDTH / 2 - sprite_size / 2, (float)SCREEN_HEIGHT / 2 - sprite_size / 2, sprite_size, sprite_size};
+    sprite = {8, 5, sprite_size, sprite_size};
     
     float *v2 = getVertices(&t2, &screen, &sprite);
-
-    screen = {32 * 4, 0, 32 * 4, 32 * 4};
-    sprite = {40, 5, 32, 32};
-
-    float *v3 = getVertices(&t2, &screen, &sprite);
-
-    screen = {32 * 8, 0, 32 * 4, 32 * 4};
-    sprite = {72, 5, 32, 32};
-
-    float *v4 = getVertices(&t2, &screen, &sprite);
-
-    screen = {0, 32 * 4, 32 * 4, 32 * 4};
-    sprite = {8, 37, 32, 32};
-    
-    float *v5 = getVertices(&t2, &screen, &sprite);
-
-    screen = {32 * 4, 32 * 4, 32 * 4, 32 * 4};
-    sprite = {40, 37, 32, 32};
-
-    float *v6 = getVertices(&t2, &screen, &sprite);
-
-    screen = {32 * 8, 32 * 4, 32 * 4, 32 * 4};
-    sprite = {72, 37, 32, 32};
-
-    float *v7 = getVertices(&t2, &screen, &sprite);
-
-
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, t1.id);
@@ -206,7 +151,15 @@ int main()
     ourShader.setInt("texture1", 0);
     ourShader.setInt("texture2", 1);
 
+    BatchRenderer batchRenderer = BatchRenderer();
+    float player_x = (float)SCREEN_WIDTH / 2 - sprite_size / 2;
+    float player_y = (float)SCREEN_HEIGHT / 2 - sprite_size / 2;
+    float velocity_in_pixels = 30.0f;
+    float velocity_x_in_screen_coordinates = velocity_in_pixels / SCREEN_WIDTH * 2;
+    float velocity_y_in_screen_coordinates = velocity_in_pixels / SCREEN_HEIGHT * 2;
+
     glm::mat4 transform = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+    glm::mat4 player = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -216,23 +169,29 @@ int main()
         {
             glfwSetWindowShouldClose(window, true);
         }
-        else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         {
-            transform = glm::translate(transform, glm::vec3(-0.1f, 0.0f, 0.0f));
+            player_x += velocity_in_pixels;
+            transform = glm::translate(transform, glm::vec3(-velocity_x_in_screen_coordinates, 0.0f, 0.0f));
         }
-        else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
         {
-            transform = glm::translate(transform, glm::vec3(0.1f, 0.0f, 0.0f));
+            player_x -= velocity_in_pixels;
+            transform = glm::translate(transform, glm::vec3(velocity_x_in_screen_coordinates, 0.0, 0.0f)); 
+            
+            for(int i = 0; i < 4; i++)
+            {
+                for(int x = 0; x < 4; x++)
+                {
+                    printf("(%f)", player[i][x]);
+                }
+                printf("\n");
+            }
+            printf("\n");
+            printf("x: %f\n", player_x);
         }
-        else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        {
-            transform = glm::translate(transform, glm::vec3(0.0f, -0.1f, 0.0f));
-        }
-        else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        {
-            transform = glm::translate(transform, glm::vec3(0.0f, 0.1f, 0.0f));
-        }
-
         glClearColor(0.9f, 0.9f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -241,25 +200,15 @@ int main()
         // get matrix's uniform location and set matrix
         ourShader.use();
         ourShader.setMat4("transform", transform);
+        ourShader.setMat4("player", player);
         ourShader.setInt("num", 0);
-        glBufferData(GL_ARRAY_BUFFER, 30 * sizeof(float), v1, GL_STATIC_DRAW);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        batchRenderer.addVertices(v1);
+        batchRenderer.render();
 
         ourShader.setInt("num", 1);
-        glBufferData(GL_ARRAY_BUFFER, 30 * sizeof(float), v2, GL_STATIC_DRAW);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glBufferData(GL_ARRAY_BUFFER, 30 * sizeof(float), v3, GL_STATIC_DRAW);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glBufferData(GL_ARRAY_BUFFER, 30 * sizeof(float), v4, GL_STATIC_DRAW);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-        glBufferData(GL_ARRAY_BUFFER, 30 * sizeof(float), v5, GL_STATIC_DRAW);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glBufferData(GL_ARRAY_BUFFER, 30 * sizeof(float), v6, GL_STATIC_DRAW);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glBufferData(GL_ARRAY_BUFFER, 30 * sizeof(float), v7, GL_STATIC_DRAW);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
+        batchRenderer.addVertices(v2);
+        batchRenderer.render();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
